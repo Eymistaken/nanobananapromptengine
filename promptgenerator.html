@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Özelleştirilmiş scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .tab-btn {
+            transition: all 0.2s ease-in-out;
+        }
+
+        .tab-btn.active {
+            background-color: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .tab-btn.inactive {
+            background-color: transparent;
+            color: #64748b;
+            border-color: #e2e8f0;
+        }
+
+        .tab-btn.inactive:hover {
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+
+        .ai-tab.active {
+            background-color: #8b5cf6;
+            border-color: #8b5cf6;
+            color: white;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 min-h-screen p-4 md:p-8 font-sans text-slate-800">
+
+    <div class="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+        <!-- Sol Taraf: Form ve Girişler -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col h-full">
+            <h1 class="text-2xl font-bold text-slate-900 mb-2">Prompt Generator</h1>
+            <p class="text-slate-500 mb-6 text-sm">Easily generate and copy prompts in JSON format.</p>
+
+            <!-- Uyarı Mesajı -->
+            <div id="english-warning"
+                class="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl mb-6 flex items-start shadow-sm">
+                <svg class="w-5 h-5 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div class="text-sm">
+                    <span class="font-semibold block mb-1">Important Note:</span>
+                    Please fill in all text inputs in <strong>English</strong>.
+                </div>
+            </div>
+
+            <!-- AI Mode Bilgi Mesajı (Sadece AI Modunda Görünür) -->
+            <div id="ai-info"
+                class="hidden bg-purple-50 border border-purple-200 text-purple-800 px-4 py-3 rounded-xl mb-6 flex items-start shadow-sm">
+                <svg class="w-5 h-5 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+                <div class="text-sm">
+                    <span class="font-semibold block mb-1">AI Assistant Active:</span>
+                    Describe what you want freely in any language. Gemini will generate the appropriate JSON format for
+                    you.
+                </div>
+            </div>
+
+            <!-- Sekmeler -->
+            <div class="flex space-x-2 mb-6">
+                <button id="tab-gen"
+                    class="tab-btn active flex-1 py-2 px-2 rounded-lg border font-medium text-sm text-center"
+                    onclick="switchTab('gen')">Image Gen</button>
+                <button id="tab-edit"
+                    class="tab-btn inactive flex-1 py-2 px-2 rounded-lg border font-medium text-sm text-center"
+                    onclick="switchTab('edit')">Image Edit</button>
+                <button id="tab-ai"
+                    class="tab-btn ai-tab inactive flex-1 py-2 px-2 rounded-lg border font-medium text-sm text-center flex items-center justify-center gap-1"
+                    onclick="switchTab('ai')">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z">
+                        </path>
+                    </svg>
+                    AI Mode
+                </button>
+            </div>
+
+            <!-- Image Gen Formu -->
+            <div id="form-gen" class="space-y-5 flex-grow">
+                <div>
+                    <label for="gen-prompt" class="block text-sm font-semibold text-slate-700 mb-2">Prompt
+                        (Description)</label>
+                    <textarea id="gen-prompt" rows="5"
+                        class="w-full rounded-xl border-slate-200 border p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow resize-none"
+                        placeholder="Describe the scene, character, environment, and atmosphere in detail..."></textarea>
+                </div>
+                <div>
+                    <label for="gen-ratio" class="block text-sm font-semibold text-slate-700 mb-2">Aspect Ratio</label>
+                    <select id="gen-ratio"
+                        class="w-full rounded-xl border-slate-200 border p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                        <option value="16:9" selected>16:9</option>
+                        <option value="1:1">1:1</option>
+                        <option value="9:16">9:16</option>
+                        <option value="4:3">4:3</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Image Edit Formu -->
+            <div id="form-edit" class="space-y-5 flex-grow hidden">
+                <div>
+                    <label for="edit-strategy" class="block text-sm font-semibold text-slate-700 mb-2">Edit
+                        Strategy</label>
+                    <textarea id="edit-strategy" rows="4"
+                        class="w-full rounded-xl border-slate-200 border p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow resize-none"
+                        placeholder="Explain in detail what needs to change, what the character should do, or the atmosphere..."></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="edit-id" class="block text-sm font-semibold text-slate-700 mb-2">Image ID</label>
+                        <input type="text" id="edit-id"
+                            class="w-full rounded-xl border-slate-200 border p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="e.g. 6">
+                        <p class="text-xs text-slate-500 mt-1">This indicates the order of the image generated in the
+                            chat session (e.g., if you generated 5 images, write 6).</p>
+                    </div>
+                    <div>
+                        <label for="edit-roi" class="block text-sm font-semibold text-slate-700 mb-2">Region of
+                            Interest</label>
+                        <input type="text" id="edit-roi"
+                            class="w-full rounded-xl border-slate-200 border p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="e.g. yellow towel on top right">
+                        <p class="text-xs text-slate-500 mt-1">You can enter coordinates or specify an object. If left
+                            blank, the entire image will be edited.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Mode Formu -->
+            <div id="form-ai" class="space-y-5 flex-grow hidden flex flex-col">
+                <div>
+                    <label for="ai-api-key" class="block text-sm font-semibold text-slate-700 mb-2">Gemini API Key
+                        (Optional)</label>
+                    <input type="password" id="ai-api-key"
+                        class="w-full rounded-xl border-slate-200 border p-3 text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                        placeholder="Leave blank if the system already provides a key...">
+                    <p class="text-xs text-slate-500 mt-2 leading-relaxed">If you provide a custom key, it must have
+                        access to the <strong>gemini-2.5-flash</strong> model. If left blank, the environment's built-in
+                        key (which relies on a specific preview model) will be utilized automatically.</p>
+                </div>
+                <div class="flex-grow flex flex-col">
+                    <label for="ai-prompt" class="block text-sm font-semibold text-slate-700 mb-2">What do you want to
+                        do?</label>
+                    <textarea id="ai-prompt"
+                        class="w-full flex-grow min-h-[120px] rounded-xl border-slate-200 border p-3 text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-shadow resize-none"
+                        placeholder="e.g., Change the car in image 5 to a red Ferrari. Make the background dark. OR Draw a cyberpunk character walking on a rainy street..."></textarea>
+                </div>
+                <button onclick="generateWithAI()" id="ai-btn"
+                    class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-4 rounded-xl transition-colors flex items-center justify-center space-x-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z">
+                        </path>
+                    </svg>
+                    <span>Generate JSON with AI</span>
+                </button>
+            </div>
+
+        </div>
+
+        <!-- Sağ Taraf: Çıktı -->
+        <div
+            class="bg-slate-900 rounded-2xl shadow-lg border border-slate-800 p-0 flex flex-col overflow-hidden h-full min-h-[400px]">
+
+            <div class="flex items-center justify-between px-4 py-3 border-b border-slate-700 bg-slate-800/50">
+                <div class="flex items-center space-x-2">
+                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                    <span class="ml-2 text-xs font-mono text-slate-400">output.json</span>
+                </div>
+
+                <!-- Kopyalama Butonu -->
+                <button onclick="copyOutput()" id="copy-btn"
+                    class="flex items-center space-x-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded-lg text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500">
+                    <svg id="copy-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z">
+                        </path>
+                    </svg>
+                    <svg id="check-icon" class="w-4 h-4 hidden text-green-400" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span id="copy-text">Copy</span>
+                </button>
+            </div>
+
+            <div class="p-4 flex-grow overflow-auto relative">
+                <!-- Yükleniyor Göstergesi -->
+                <div id="loading-indicator"
+                    class="hidden absolute inset-0 bg-slate-900/80 flex flex-col items-center justify-center z-10">
+                    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-500 mb-3"></div>
+                    <p class="text-purple-400 text-sm font-mono animate-pulse">Gemini is generating JSON...</p>
+                </div>
+                <pre><code id="json-output" class="text-sm font-mono text-green-400 whitespace-pre-wrap break-all"></code></pre>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Footer Açıklaması -->
+    <div class="max-w-5xl mx-auto mt-8 text-center">
+        <p class="text-sm text-slate-400 font-medium">Created for the Nano Banana series.</p>
+    </div>
+
+    <!-- Metin kopyalamak için gizli textarea (Fallback için) -->
+    <textarea id="hidden-clipboard" class="hidden"></textarea>
+
+    <script>
+        // Çevre değişkeninden gelen API Key (Canvas ortamında genelde doludur)
+        const apiKey = "";
+
+        let currentMode = 'gen';
+
+        // Element Referansları
+        const elements = {
+            tabs: {
+                gen: document.getElementById('tab-gen'),
+                edit: document.getElementById('tab-edit'),
+                ai: document.getElementById('tab-ai')
+            },
+            forms: {
+                gen: document.getElementById('form-gen'),
+                edit: document.getElementById('form-edit'),
+                ai: document.getElementById('form-ai')
+            },
+            inputs: {
+                genPrompt: document.getElementById('gen-prompt'),
+                genRatio: document.getElementById('gen-ratio'),
+                editStrategy: document.getElementById('edit-strategy'),
+                editId: document.getElementById('edit-id'),
+                editRoi: document.getElementById('edit-roi')
+            },
+            aiInputs: {
+                key: document.getElementById('ai-api-key'),
+                prompt: document.getElementById('ai-prompt')
+            },
+            messages: {
+                englishWarning: document.getElementById('english-warning'),
+                aiInfo: document.getElementById('ai-info')
+            },
+            ui: {
+                output: document.getElementById('json-output'),
+                loading: document.getElementById('loading-indicator'),
+                aiBtn: document.getElementById('ai-btn')
+            }
+        };
+
+        // LocalStorage'dan API anahtarını yükle
+        const savedApiKey = localStorage.getItem('nanoBananaApiKey');
+        if (savedApiKey) {
+            elements.aiInputs.key.value = savedApiKey;
+        }
+
+        // API anahtarı değiştiğinde LocalStorage'a otomatik kaydet
+        elements.aiInputs.key.addEventListener('input', (e) => {
+            localStorage.setItem('nanoBananaApiKey', e.target.value);
+        });
+
+        // Sekme Değiştirme Fonksiyonu
+        function switchTab(mode) {
+            currentMode = mode;
+
+            // Tüm sekmeleri inaktif yap
+            elements.tabs.gen.className = 'tab-btn inactive flex-1 py-2 px-2 rounded-lg border font-medium text-sm text-center';
+            elements.tabs.edit.className = 'tab-btn inactive flex-1 py-2 px-2 rounded-lg border font-medium text-sm text-center';
+            elements.tabs.ai.className = 'tab-btn ai-tab inactive flex-1 py-2 px-2 rounded-lg border font-medium text-sm text-center flex items-center justify-center gap-1';
+
+            // Tüm formları gizle
+            elements.forms.gen.classList.add('hidden');
+            elements.forms.edit.classList.add('hidden');
+            elements.forms.ai.classList.add('hidden');
+
+            // Mesajları ayarla
+            elements.messages.englishWarning.classList.remove('hidden');
+            elements.messages.aiInfo.classList.add('hidden');
+
+            // Seçileni aktif yap
+            if (mode === 'gen') {
+                elements.tabs.gen.classList.add('active');
+                elements.tabs.gen.classList.remove('inactive');
+                elements.forms.gen.classList.remove('hidden');
+                updateOutput();
+            } else if (mode === 'edit') {
+                elements.tabs.edit.classList.add('active');
+                elements.tabs.edit.classList.remove('inactive');
+                elements.forms.edit.classList.remove('hidden');
+                updateOutput();
+            } else if (mode === 'ai') {
+                elements.tabs.ai.classList.add('active');
+                elements.tabs.ai.classList.remove('inactive');
+                elements.forms.ai.classList.remove('hidden');
+                elements.messages.englishWarning.classList.add('hidden');
+                elements.messages.aiInfo.classList.remove('hidden');
+                // AI modunda hemen güncelleme yapmıyoruz, bekliyoruz
+                if (elements.ui.output.textContent === "" || !elements.ui.output.textContent.includes('action_')) {
+                    elements.ui.output.textContent = "// Fill the form and click the button to generate JSON with AI.";
+                }
+            }
+        }
+
+        // Metni köşeli parantez içine alma yardımcı fonksiyonu
+        function wrapBrackets(text) {
+            if (!text) return "[]";
+            if (text.startsWith('[') && text.endsWith(']')) return text;
+            return `[${text}]`;
+        }
+
+        // JSON Çıktısını Güncelleme (Manuel modlar için)
+        function updateOutput() {
+            if (currentMode === 'ai') return; // AI modunda manuel güncelleme yapılmaz
+
+            let outputObj = {};
+
+            if (currentMode === 'gen') {
+                const promptVal = elements.inputs.genPrompt.value.trim();
+                const ratioVal = elements.inputs.genRatio.value;
+
+                outputObj = {
+                    "action": "image_gen",
+                    "action_input": {
+                        "prompt": wrapBrackets(promptVal),
+                        "aspect_ratio": ratioVal
+                    }
+                };
+            } else if (currentMode === 'edit') {
+                const strategyVal = elements.inputs.editStrategy.value.trim();
+                const idVal = elements.inputs.editId.value.trim() || '""';
+                let roiValRaw = elements.inputs.editRoi.value.trim();
+
+                let roiVal;
+                // ROI değerini kontrol et: Boşsa boş string, dizi ise dizi, metinse string olarak ayarla
+                if (roiValRaw === "") {
+                    roiVal = '""';
+                } else if (roiValRaw.startsWith('[') && roiValRaw.endsWith(']')) {
+                    roiVal = roiValRaw;
+                } else {
+                    roiVal = `'${roiValRaw.replace(/'/g, "\\'")}'`;
+                }
+
+                // Taslaktaki stringifiye edilmiş action_input yapısı:
+                const actionInputStr = `{'edit_strategy': '${wrapBrackets(strategyVal).replace(/'/g, "\\'")}', 'image_id': ${idVal}, 'region_of_interest': ${roiVal}}`;
+
+                outputObj = {
+                    "action": "image_edit",
+                    "action_input": actionInputStr
+                };
+            }
+
+            // Çıktıyı ekrana bas
+            elements.ui.output.textContent = JSON.stringify(outputObj, null, 2);
+        }
+
+        // Gemini API ile Fetch ve Retry Mantığı
+        async function fetchWithRetry(url, options, maxRetries = 5) {
+            const delays = [1000, 2000, 4000, 8000, 16000];
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return await response.json();
+                } catch (error) {
+                    if (i === maxRetries - 1) throw error;
+                    await new Promise(res => setTimeout(res, delays[i]));
+                }
+            }
+        }
+
+        // AI İşlemini Başlat
+        async function generateWithAI() {
+            const userPrompt = elements.aiInputs.prompt.value.trim();
+            if (!userPrompt) {
+                alert("Please enter a description.");
+                return;
+            }
+
+            const userProvidedKey = elements.aiInputs.key.value.trim();
+            const keyToUse = userProvidedKey || apiKey;
+
+            // Eğer kullanıcı kendi key'ini girdiyse genel modeli, Canvas ortamındaysa Canvas özel modelini kullan
+            const modelName = userProvidedKey ? "gemini-2.5-flash" : "gemini-2.5-flash-preview-09-2025";
+
+            // UI Yükleniyor Durumu
+            elements.ui.loading.classList.remove('hidden');
+            elements.ui.aiBtn.disabled = true;
+            elements.ui.aiBtn.classList.add('opacity-70', 'cursor-not-allowed');
+
+            const systemPrompt = `
+Sen "Nano Banana" adlı imaj üretim/düzenleme yapay zekası için çalışan uzman bir prompt mühendisisin.
+Kullanıcı sana herhangi bir dilde serbest bir metin verecek.
+Görevlerin:
+1. Kullanıcının yeni bir görsel mi yaratmak istediğini (gen) yoksa var olan bir görseli mi düzenlemek istediğini (edit) anla. İçinde id, değiştir, yap, numaralı gibi kelimeler varsa yüksek ihtimal edit'tir.
+2. Kullanıcının isteğini İngilizce'ye çevir ve detaylandır.
+3. Çıktıyı SADECE JSON formatında ver, markdown veya ekstra metin KULLANMA.
+
+JSON Şeman şu şekilde olmalı:
+{
+  "mode": "gen" veya "edit",
+  "prompt": "Detaylı, İngilizce prompt veya düzenleme stratejisi",
+  "aspect_ratio": "16:9, 1:1, 9:16 veya 4:3 (kullanıcı belirtmemişse 16:9)",
+  "image_id": "Sadece edit modu için, kullanıcının belirttiği görsel ID'si (sayısal veya sayısal metin). Eğer gen modu ise veya belirtilmemişse boş string.",
+  "region_of_interest": "Sadece edit modu için, kullanıcının belirttiği spesifik bölge (İngilizce olarak, örn 'yellow towel on top right') veya koordinat dizisi. Belirtilmemişse boş string."
+}
+`;
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${keyToUse}`;
+            const payload = {
+                contents: [{ parts: [{ text: userPrompt }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: {
+                    responseMimeType: "application/json"
+                }
+            };
+
+            try {
+                const result = await fetchWithRetry(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!rawText) throw new Error("API returned an empty response.");
+
+                const aiData = JSON.parse(rawText);
+                formatAndDisplayAIResponse(aiData);
+
+            } catch (error) {
+                console.error("AI Generation Error:", error);
+                elements.ui.output.textContent = "// Error occurred: " + error.message + "\n// Please check the API key and try again.";
+            } finally {
+                elements.ui.loading.classList.add('hidden');
+                elements.ui.aiBtn.disabled = false;
+                elements.ui.aiBtn.classList.remove('opacity-70', 'cursor-not-allowed');
+            }
+        }
+
+        // AI'dan Gelen JSON'ı Nano Banana Formatına Çevirip Göster
+        function formatAndDisplayAIResponse(aiData) {
+            let finalOutput = {};
+
+            if (aiData.mode === 'gen') {
+                finalOutput = {
+                    "action": "image_gen",
+                    "action_input": {
+                        "prompt": wrapBrackets(aiData.prompt),
+                        "aspect_ratio": aiData.aspect_ratio || "16:9"
+                    }
+                };
+            } else {
+                const idVal = aiData.image_id || '""';
+                let roiValRaw = aiData.region_of_interest || "";
+
+                let roiVal;
+                if (roiValRaw === "") {
+                    roiVal = '""';
+                } else if (roiValRaw.toString().startsWith('[') && roiValRaw.toString().endsWith(']')) {
+                    roiVal = roiValRaw;
+                } else {
+                    roiVal = `'${roiValRaw.replace(/'/g, "\\'")}'`;
+                }
+
+                const actionInputStr = `{'edit_strategy': '${wrapBrackets(aiData.prompt).replace(/'/g, "\\'")}', 'image_id': ${idVal}, 'region_of_interest': ${roiVal}}`;
+
+                finalOutput = {
+                    "action": "image_edit",
+                    "action_input": actionInputStr
+                };
+            }
+
+            elements.ui.output.textContent = JSON.stringify(finalOutput, null, 2);
+        }
+
+        // Kopyalama Fonksiyonu
+        function copyOutput() {
+            const textToCopy = elements.ui.output.textContent;
+            if (!textToCopy || textToCopy.startsWith('//')) return; // Hata veya boş mesaj kopyalanmasın
+
+            const textArea = document.createElement("textarea");
+            textArea.value = textToCopy;
+            textArea.style.position = "fixed";
+            textArea.style.top = "-9999px";
+            textArea.style.left = "-9999px";
+
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+
+            try {
+                document.execCommand('copy');
+                showCopySuccess();
+            } catch (err) {
+                console.error('Kopyalama başarısız oldu', err);
+            }
+
+            document.body.removeChild(textArea);
+        }
+
+        function showCopySuccess() {
+            const copyIcon = document.getElementById('copy-icon');
+            const checkIcon = document.getElementById('check-icon');
+            const copyText = document.getElementById('copy-text');
+            const copyBtn = document.getElementById('copy-btn');
+
+            copyIcon.classList.add('hidden');
+            checkIcon.classList.remove('hidden');
+            copyText.textContent = 'Copied!';
+            copyBtn.classList.add('bg-green-600', 'text-white');
+            copyBtn.classList.remove('bg-slate-700', 'text-slate-200');
+
+            setTimeout(() => {
+                copyIcon.classList.remove('hidden');
+                checkIcon.classList.add('hidden');
+                copyText.textContent = 'Copy';
+                copyBtn.classList.remove('bg-green-600', 'text-white');
+                copyBtn.classList.add('bg-slate-700', 'text-slate-200');
+            }, 2000);
+        }
+
+        // Event Listener'ları bağla (manuel formlar için)
+        Object.values(elements.inputs).forEach(input => {
+            input.addEventListener('input', updateOutput);
+        });
+
+        // Başlangıçta çalıştır
+        updateOutput();
+
+    </script>
+</body>
+
+</html>
